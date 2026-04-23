@@ -1,12 +1,22 @@
-<!DOCTYPE html>
-<html>
+@extends('layouts.app')
 
-<head>
-    <title>Department Work Plan</title>
+@section('title', 'Department Work Plan')
 
-    <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
-
+@section('content')
     <style>
+        .modal {
+            z-index: 9999 !important;
+        }
+
+        .modal-backdrop {
+            z-index: 9998 !important;
+        }
+
+        /* Tambahan agar scrollbar tidak dobel saat modal muncul */
+        body.modal-open {
+            overflow: hidden;
+        }
+
         @media print {
             .no-print {
                 display: none !important;
@@ -21,289 +31,247 @@
             }
         }
 
-        .doc-header {
+        body {
+            background-color: #f4f7f6;
+        }
+
+        /* Header Dokumen ala ISO */
+        .doc-header-table {
+            width: 100%;
             border: 2px solid #000;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-
-        .doc-title {
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .doc-meta {
-            font-size: 12px;
-        }
-
-        .section-box {
-            border: 1px solid #ddd;
-            padding: 10px;
             margin-bottom: 15px;
+            background-color: #fff;
         }
 
-        .label {
-            font-weight: 600;
+        .doc-header-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            vertical-align: middle;
         }
 
-        .small-note {
-            font-size: 11px;
-            color: #777;
+        /* Tabel Utama */
+        .table thead th {
+            background-color: #212529;
+            color: white;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            vertical-align: middle;
         }
 
-        td[rowspan] {
+        .table tbody td {
+            font-size: 0.85rem;
+            padding: 0.75rem;
             vertical-align: middle !important;
         }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border-radius: 0.5rem;
+        }
+
+        .label-side {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .value-side {
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 10px;
+            color: #212529;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background-color: #fff !important;
+            }
+
+            .container-fluid {
+                padding: 0 !important;
+            }
+
+            .card {
+                box-shadow: none !important;
+                border: 1px solid #dee2e6 !important;
+            }
+        }
     </style>
-</head>
 
-<body>
+    <div class="container-fluid py-3">
 
-    <div class="container mt-3">
+        {{-- HEADER DOKUMEN (ISO STYLE) --}}
+        {{-- <table class="doc-header-table text-center">
+            <tr>
+                <td width="20%">
+                    <h4 class="mb-0 fw-bold">LOGO</h4>
+                </td>
+                <td width="55%">
+                    <h5 class="mb-0 fw-bold text-uppercase">DEPARTMENT WORK PLAN</h5>
+                </td>
+                <td width="25%" class="text-start small">
+                    <div>Doc No: <strong>DWP/{{ $selectedYear }}/{{ strtoupper($selectedWh) }}</strong></div>
+                    <div>Year: <strong>{{ $selectedYear }}</strong></div>
+                </td>
+            </tr>
+        </table> --}}
 
-        {{-- HEADER ISO --}}
-        <div class="doc-header text-center">
-            <div class="doc-title">DEPARTMENT WORK PLAN</div>
-            <div class="doc-meta">
-            </div>
-        </div>
-
-        {{-- ACTION --}}
-        <div class="d-flex justify-content-between mb-2 no-print">
-
-            <div class="d-flex gap-2">
-
-                {{-- ADD --}}
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addWorkPlanModal">
-                    + Add Work Plan
-                </button>
-
-                {{-- UPDATE --}}
-                <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateWorkPlanModal">
-                    ✏ Update Work Plan
-                </button>
-
-            </div>
-
-            <button class="btn btn-dark btn-sm" onclick="printPage()">
-                🖨 Print
-            </button>
-
-        </div>
-
-        {{-- INFO SECTION --}}
-        <div class="section-box">
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div><span class="label">Directorate:</span></div>
-                    <div><span class="label">Division/Plant:</span></div>
-                    <div><span class="label">Department:</span></div>
-                </div>
-
-                <div class="col-md-6">
-                    <div><span class="label">Effective Year:</span></div>
-                    <div><span class="label">Revision No:</span></div>
-                    <div><span class="label">Revision Date:</span> </div>
-                </div>
-            </div>
-
-        </div>
-
-        <table class="table table-bordered table-sm mb-0 align-middle">
-
-            <thead class="table-dark text-center">
-                <tr>
-                    <th style="width:4%;">No</th>
-                    <th style="width:10%;">Source No</th>
-                    <th style="width:22%;">Work Plan</th>
-                    <th style="width:15%;">Deliverable</th>
-                    <th style="width:15%;">Section / In Charge</th>
-                    <th style="width:10%;">Start Date</th>
-                    <th style="width:10%;">Finish Date</th>
-                    <th style="width:10%;">Last update</th>
-                    <th style="width:14%;" class="no-print">Action</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                @if ($workPlans->count())
-                    @foreach ($workPlans as $source => $plans)
-                        @foreach ($plans as $index => $plan)
-                            <tr>
-
-                                @if ($index == 0)
-                                    {{-- NO --}}
-                                    <td class="text-center fw-semibold" rowspan="{{ count($plans) }}">
-                                        {{ $loop->parent->iteration }}
-                                    </td>
-
-                                    {{-- SOURCE --}}
-                                    <td class="text-center" rowspan="{{ count($plans) }}">
-                                        {{ $source ?? '-' }}
-                                    </td>
-                                @endif
-
-                                {{-- WORK PLAN --}}
-                                <td>
-                                    <div class="fw-semibold ">{{ $plan->work_plan ?? '-' }} </div>
-                                </td>
-
-                                {{-- DELIVERABLE --}}
-                                <td>{{ $plan->deliverable ?? '-' }} </td>
-
-                                {{-- SECTION --}}
-                                <td class="text-center">
-                                    <small class="text-muted">{{ $plan->in_charge ?? '-' }} </small>
-                                </td>
-
-                                {{-- START --}}
-                                <td class="text-center">
-                                    {{ $plan->start_date ?? '-' }} ⏳
-                                </td>
-
-                                {{-- FINISH --}}
-                                <td class="text-center">
-                                    {{ $plan->finish_date ?? '-' }} 🏁
-                                </td>
-
-                                {{-- LAST UPDATE --}}
-                                <td class="text-center">
-                                    {{ $plan->updated_at?->format('d-m-Y') ?? '-' }} 🕒
-                                    <small class="text-muted pointer"><a href="#" data-bs-toggle="modal"
-                                            data-bs-target="#dataDetail">Detail</a></small>
-                                </td>
-
-                                {{-- ACTION --}}
-                                <td class="text-center no-print d-flex justify-content-between gap-2">
-
-                                    <!-- Edit Button -->
-                                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#editModal{{ $plan->id }}">
-                                        ✏️ Edit
-                                    </button>
-
-                                    <!-- Delete Form -->
-                                    <form action="{{ route('workplan.delete', $plan->id) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <button class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Are you sure you want to delete this work plan? 🗑️')">
-                                            🗑️ Delete
-                                        </button>
-                                    </form>
-
-                                </td>
-
-                            </tr>
-
-                            {{-- MODAL EDIT (DI LUAR <tr>) --}}
-                            <div class="modal fade" id="editModal{{ $plan->id }}" tabindex="-1"
-                                aria-labelledby="editModalLabel{{ $plan->id }}" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-
-                                        <form action="{{ route('workplan.update', $plan->id) }}" method="POST">
-                                            @csrf
-                                            @method('PUT')
-
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="editModalLabel{{ $plan->id }}">Edit
-                                                    Work Plan ✏️</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                    aria-label="Close"></button>
-                                            </div>
-
-                                            <div class="modal-body">
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">Work Plan 📝</label>
-                                                    <input type="text" name="work_plan"
-                                                        value="{{ $plan->work_plan }}" class="form-control mb-2"
-                                                        required>
-                                                </div>
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">Source No 📄</label>
-                                                    <input type="text" name="source" value="{{ $plan->source }}"
-                                                        class="form-control mb-2" required>
-                                                </div>
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">Deliverable 🎯</label>
-                                                    <input type="text" name="deliverable"
-                                                        value="{{ $plan->deliverable }}" class="form-control mb-2"
-                                                        required>
-                                                </div>
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">Section 🏢</label>
-                                                    <input type="text" name="section" value="{{ $plan->section }}"
-                                                        class="form-control mb-2" required>
-                                                </div>
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">In Charge 👨‍💼</label>
-                                                    <input type="text" name="in_charge"
-                                                        value="{{ $plan->in_charge }}" class="form-control mb-2"
-                                                        required>
-                                                </div>
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">Start Date ⏳</label>
-                                                    <input type="date" name="start_date"
-                                                        value="{{ $plan->start_date }}" class="form-control mb-2"
-                                                        required>
-                                                </div>
-
-                                                <div class="mb-2">
-                                                    <label class="form-label">Finish Date 🏁</label>
-                                                    <input type="date" name="finish_date"
-                                                        value="{{ $plan->finish_date }}" class="form-control mb-2"
-                                                        required>
-                                                </div>
-
-                                            </div>
-
-                                            <div class="modal-footer">
-                                                <button class="btn btn-secondary" data-bs-dismiss="modal">
-                                                    Close 🚪
-                                                </button>
-                                                <button class="btn btn-primary">
-                                                    Update 📝
-                                                </button>
-                                            </div>
-
-                                        </form>
-
-                                    </div>
-                                </div>
-                            </div>
+        {{-- TOOLBAR ACTION --}}
+        <div class="card mb-3 no-print bg-dark">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center text-white">
+                <form action="{{ route('workplan.index') }}" method="GET" class="d-flex gap-2">
+                    {{-- Filter Tahun --}}
+                    <select name="tahun" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                        @foreach ($years as $y)
+                            <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>Year:
+                                {{ $y }}</option>
                         @endforeach
-                    @endforeach
-                @else
-                    <tr>
-                        <td colspan="9" class="text-center text-muted py-3">
-                            No Work Plan Data Available 😔
-                        </td>
-                    </tr>
-                @endif
+                    </select>
 
-            </tbody>
+                    {{-- Filter Warehouse (Hanya Superuser) --}}
+                    @if ($userRole === 'superuser')
+                        <select name="warehouse" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                            <option value="all" {{ $selectedWh == 'all' ? 'selected' : '' }}>-- All Warehouse --</option>
+                            @foreach ($listWarehouse as $wh)
+                                <option value="{{ $wh }}" {{ $selectedWh == $wh ? 'selected' : '' }}>WH:
+                                    {{ $wh }}</option>
+                            @endforeach
+                        </select>
+                    @endif
 
+                    <a href="{{ route('workplan.index') }}" class="btn btn-danger btn-sm px-3">
+                        <i data-lucide="refresh-cw" class="me-1" style="width:14px"></i> Reset
+                    </a>
+                </form>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal"
+                        data-bs-target="#addWorkPlanModal">
+                        <i data-lucide="plus-circle" style="width: 16px;"></i> Add Plan
+                    </button>
+                    <button class="btn btn-info btn-sm text-white d-flex align-items-center gap-1" onclick="window.print()">
+                        <i data-lucide="printer" style="width: 16px;"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            {{-- SIDEBAR INFO (KIRI) --}}
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white p-2 small fw-bold text-center">
+                        DETAILS INFORMATION
+                    </div>
+                    <div class="card-body">
+                        <span class="label-side">DIRECTORATE</span>
+                        <span class="value-side">{{ $directorate }}</span>
+
+                        <span class="label-side">DIVISION / PLANT</span>
+                        <span class="value-side">{{ $division }}</span>
+
+                        <span class="label-side">DEPARTMENT</span>
+                        <span class="value-side text-primary">{{ $department }}</span>
+
+                        <hr>
+                        <span class="label-side">TOTAL RECORDS</span>
+                        <span class="badge bg-secondary">{{ $workPlans->flatten()->count() }} Items</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- TABLE PROGRESS (KANAN) --}}
+            <div class="col-lg-9">
+                <div class="card h-100">
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead class="sticky-top">
+                                    <tr class="text-center">
+                                        <th width="40">NO</th>
+                                        <th width="100">SOURCE</th>
+                                        <th>WORK PLAN DETAIL</th>
+                                        <th width="120">TIMELINE</th>
+                                        <th width="80">STATUS</th>
+                                        <th width="110" class="no-print">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($workPlans as $source => $plans)
+                                        @foreach ($plans as $index => $plan)
+                                            <tr>
+                                                @if ($index == 0)
+                                                    <td class="text-center fw-bold bg-light" rowspan="{{ count($plans) }}">
+                                                        {{ $loop->parent->iteration }}
+                                                    </td>
+                                                    <td class="text-center fw-bold text-primary bg-light-subtle"
+                                                        rowspan="{{ count($plans) }}">
+                                                        {{ $source ?? '-' }}
+                                                    </td>
+                                                @endif
+
+                                                <td>
+                                                    <div class="fw-bold">{{ $plan->work_plan }}</div>
+                                                    <small class="text-muted d-block">Deliverable:
+                                                        {{ $plan->deliverable }}</small>
+                                                    <small class="text-primary" style="font-size: 10px;">PIC:
+                                                        {{ $plan->in_charge }} ({{ $plan->section }})</small>
+                                                </td>
+                                                <td class="text-center small">
+                                                    <div class="text-success">S: {{ $plan->start_date }}</div>
+                                                    <div class="text-danger">F: {{ $plan->finish_date }}</div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-light border py-0" data-bs-toggle="modal"
+                                                        data-bs-target="#dataDetail">
+                                                        <small>Detail</small>
+                                                    </button>
+                                                </td>
+                                                <td class="text-center no-print">
+                                                    <div class="d-flex gap-1 justify-content-center">
+                                                        <button class="btn btn-sm btn-outline-warning"
+                                                            onclick="editWorkPlan({{ json_encode($plan) }})"
+                                                            data-bs-toggle="modal" data-bs-target="#updateWorkPlanModal">
+                                                            <i data-lucide="edit-3" style="width: 14px;"></i>
+                                                        </button>
+                                                        <form action="{{ route('workplan.delete', $plan->id) }}"
+                                                            method="POST" onsubmit="return confirm('Hapus plan ini?')">
+                                                            @csrf @method('DELETE')
+                                                            <button class="btn btn-sm btn-outline-danger">
+                                                                <i data-lucide="trash-2" style="width: 14px;"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">No Work Plan data
+                                                available.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        function printPage() {
-            window.print();
-        }
-    </script>
     <!-- ADD WORK PLAN MODAL -->
-    <div class="modal fade" id="addWorkPlanModal" tabindex="-1" aria-labelledby="addWorkPlanModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="addWorkPlanModal" tabindex="-1" aria-labelledby="addWorkPlanModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
 
@@ -370,7 +338,7 @@
         aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form action="{{ route('workplan.update', $plan->id) }}" method="POST">
+                <form action="{{ route('workplan.update', $plan->id ?? 0) }}" method="POST">
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="id" id="workplan_id">
@@ -431,44 +399,50 @@
     <div class="modal fade" id="dataDetail" tabindex="-1" aria-labelledby="dataDetailLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form action="{{ route('workplan.update', $plan->id) }}" method="POST">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="id" id="workplan_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">DATA MONITORING PER BULAN</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Progress:</p>
 
-                    <div class="modal-header">
-                        <h5 class="modal-title">DATA MONITORING PER BULAN</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
+                    {{-- Tabel Item + Pencapaian --}}
 
-                    <div class="modal-body">
-                        <p>Progress : </p>
 
-                        {{-- AWAL TABEL ITEM + PENCAPAIAN --}}
-
-                        {{-- AKHIR TABEL ITEM + PENCAPAIAN --}}
-
-                    </div>
-
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">
-                            Close
-                        </button>
-                        <button class="btn btn-primary">
-                            Update
-                        </button>
-                    </div>
-
-                </form>
-
+                    {{-- Jika ingin menambahkan form atau informasi lain di bawah tabel, bisa ditambahkan di sini --}}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button class="btn btn-primary">Perbarui</button>
+                </div>
             </div>
         </div>
     </div>
-</body>
+@endsection
 
-<script src="{{ asset('js/bootstrap.bundle.min.js') }}">
-    function editWorkPlan(data) {
-        document.getElementById('workplan_id').value = data.id;
-        document.querySelector('input[name="work_plan"]').value = data.work_plan;
-    }
-</script>
+@section('scripts')
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+
+        function editWorkPlan(data) {
+            // Ambil ID modal yang mau dipake (sesuaikan dengan ID modal lu bro)
+            const modal = document.querySelector('#updateWorkPlanModal');
+
+            // Mapping data dari baris tabel ke input modal
+            document.getElementById('workplan_id').value = data.id;
+
+            // Contoh cara isi input (sesuaikan nama 'name' di form lu)
+            modal.querySelector('input[name="work_plan"]').value = data.work_plan;
+            modal.querySelector('input[name="source"]').value = data.source;
+            modal.querySelector('input[name="deliverable"]').value = data.deliverable;
+            modal.querySelector('input[name="section"]').value = data.section;
+            modal.querySelector('input[name="in_charge"]').value = data.in_charge;
+            modal.querySelector('input[name="start_date"]').value = data.start_date;
+            modal.querySelector('input[name="finish_date"]').value = data.finish_date;
+        }
+    </script>
+@endsection
